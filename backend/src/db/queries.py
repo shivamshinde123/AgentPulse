@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session as DBSession, joinedload, sessionmaker
+from sqlalchemy.orm import joinedload, sessionmaker
 
 from .models import (
     CodeMetricsModel,
@@ -44,44 +44,55 @@ class QueryManager:
 
             total = db.execute(count_query).scalar() or 0
 
-            query = query.order_by(SessionModel.start_time.desc())
-            query = query.offset(offset).limit(limit)
-            sessions = db.execute(query).scalars().all()
+            # Subqueries for interaction and error counts — avoids N+1 queries
+            interaction_sq = (
+                select(
+                    InteractionModel.session_id,
+                    func.count(InteractionModel.id).label("cnt"),
+                )
+                .group_by(InteractionModel.session_id)
+                .subquery()
+            )
+            error_sq = (
+                select(
+                    ErrorModel.session_id,
+                    func.count(ErrorModel.id).label("cnt"),
+                )
+                .group_by(ErrorModel.session_id)
+                .subquery()
+            )
 
-            result = []
-            for s in sessions:
-                interaction_count = (
-                    db.execute(
-                        select(func.count(InteractionModel.id)).where(
-                            InteractionModel.session_id == s.id
-                        )
-                    ).scalar()
-                    or 0
+            query = (
+                query
+                .outerjoin(interaction_sq, SessionModel.id == interaction_sq.c.session_id)
+                .outerjoin(error_sq, SessionModel.id == error_sq.c.session_id)
+                .add_columns(
+                    func.coalesce(interaction_sq.c.cnt, 0).label("interaction_count"),
+                    func.coalesce(error_sq.c.cnt, 0).label("error_count"),
                 )
-                error_count = (
-                    db.execute(
-                        select(func.count(ErrorModel.id)).where(
-                            ErrorModel.session_id == s.id
-                        )
-                    ).scalar()
-                    or 0
-                )
-                result.append(
-                    {
-                        "id": s.id,
-                        "start_time": s.start_time.isoformat() if s.start_time else None,
-                        "end_time": s.end_time.isoformat() if s.end_time else None,
-                        "duration_seconds": s.duration_seconds,
-                        "language": s.language,
-                        "project_name": s.project_name,
-                        "file_path": s.file_path,
-                        "total_tokens_used": s.total_tokens_used,
-                        "acceptance_rate": s.acceptance_rate,
-                        "status": s.status,
-                        "interaction_count": interaction_count,
-                        "error_count": error_count,
-                    }
-                )
+                .order_by(SessionModel.start_time.desc())
+                .offset(offset)
+                .limit(limit)
+            )
+            rows = db.execute(query).all()
+
+            result = [
+                {
+                    "id": row.SessionModel.id,
+                    "start_time": row.SessionModel.start_time.isoformat() if row.SessionModel.start_time else None,
+                    "end_time": row.SessionModel.end_time.isoformat() if row.SessionModel.end_time else None,
+                    "duration_seconds": row.SessionModel.duration_seconds,
+                    "language": row.SessionModel.language,
+                    "project_name": row.SessionModel.project_name,
+                    "file_path": row.SessionModel.file_path,
+                    "total_tokens_used": row.SessionModel.total_tokens_used,
+                    "acceptance_rate": row.SessionModel.acceptance_rate,
+                    "status": row.SessionModel.status,
+                    "interaction_count": row.interaction_count,
+                    "error_count": row.error_count,
+                }
+                for row in rows
+            ]
 
             return result, total
 
@@ -420,13 +431,19 @@ class QueryManager:
             if language:
                 query = query.where(SessionModel.language == language)
             if start_date:
-                query = query.where(
-                    SessionModel.start_time >= datetime.fromisoformat(start_date)
-                )
+                try:
+                    query = query.where(
+                        SessionModel.start_time >= datetime.fromisoformat(start_date)
+                    )
+                except ValueError:
+                    raise ValueError(f"Invalid start_date format: {start_date!r}. Use ISO 8601.")
             if end_date:
-                query = query.where(
-                    SessionModel.start_time < datetime.fromisoformat(end_date)
-                )
+                try:
+                    query = query.where(
+                        SessionModel.start_time < datetime.fromisoformat(end_date)
+                    )
+                except ValueError:
+                    raise ValueError(f"Invalid end_date format: {end_date!r}. Use ISO 8601.")
 
             query = query.order_by(SessionModel.start_time)
             sessions = db.execute(query).scalars().all()
@@ -502,18 +519,28 @@ class QueryManager:
 
     @staticmethod
     def _build_session_filters(filters: Dict) -> list:
-        """Convert a filter dict to a list of SQLAlchemy where-clauses."""
+        """Convert a filter dict to a list of SQLAlchemy where-clauses.
+
+        Raises ValueError for malformed ISO date strings so the caller can
+        surface a 422 Unprocessable Entity response instead of a 500.
+        """
         conditions = []
         if filters.get("language"):
             conditions.append(SessionModel.language == filters["language"])
         if filters.get("status"):
             conditions.append(SessionModel.status == filters["status"])
         if filters.get("start_date"):
-            conditions.append(
-                SessionModel.start_time >= datetime.fromisoformat(filters["start_date"])
-            )
+            try:
+                conditions.append(
+                    SessionModel.start_time >= datetime.fromisoformat(filters["start_date"])
+                )
+            except ValueError:
+                raise ValueError(f"Invalid start_date format: {filters['start_date']!r}. Use ISO 8601.")
         if filters.get("end_date"):
-            conditions.append(
-                SessionModel.start_time < datetime.fromisoformat(filters["end_date"])
-            )
+            try:
+                conditions.append(
+                    SessionModel.start_time < datetime.fromisoformat(filters["end_date"])
+                )
+            except ValueError:
+                raise ValueError(f"Invalid end_date format: {filters['end_date']!r}. Use ISO 8601.")
         return conditions

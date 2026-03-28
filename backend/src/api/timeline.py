@@ -10,6 +10,8 @@ router = APIRouter(tags=["timeline"])
 
 _qm: Optional[QueryManager] = None
 
+_VALID_GRANULARITIES = {"day", "week", "month"}
+
 
 def init_query_manager(qm: QueryManager) -> None:
     global _qm
@@ -39,7 +41,15 @@ async def get_historical_timeline(
     end_date: Optional[str] = Query(None, description="ISO format"),
 ):
     """Get historical timeline of sessions aggregated by day/week/month."""
-    timeline = _get_qm().get_historical_timeline(
-        granularity, language, start_date, end_date
-    )
+    if granularity not in _VALID_GRANULARITIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Invalid granularity {granularity!r}. Must be one of: {sorted(_VALID_GRANULARITIES)}",
+        )
+    try:
+        timeline = _get_qm().get_historical_timeline(
+            granularity, language, start_date, end_date
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
     return {"timeline": timeline}

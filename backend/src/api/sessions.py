@@ -40,7 +40,10 @@ async def list_sessions(
         "end_date": end_date,
     }
 
-    sessions, total_count = _get_qm().get_all_sessions(filters, limit, offset)
+    try:
+        sessions, total_count = _get_qm().get_all_sessions(filters, limit, offset)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     return {
         "sessions": sessions,

@@ -16,6 +16,7 @@ def calculate_quality_score(
     - Lower complexity is better (40% weight)
     - Type hints present (30% weight)
     - Shallow nesting (30% weight)
+    - Lines of code acts as a tie-breaker signal (not separately weighted)
     """
     score = 0.0
 

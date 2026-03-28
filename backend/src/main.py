@@ -1,7 +1,6 @@
 """FastAPI backend for Claude Code Analyzer analytics."""
 
 import os
-import sys
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -36,7 +35,8 @@ os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
 engine = get_engine(db_path)
 Base.metadata.create_all(engine)
 
-session_factory = get_session_factory(db_path)
+# Reuse the same engine for the session factory to avoid a second connection pool
+session_factory = get_session_factory(db_path, engine=engine)
 qm = QueryManager(session_factory)
 
 # Wire the query manager into each router module

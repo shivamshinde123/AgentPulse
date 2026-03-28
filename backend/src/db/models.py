@@ -153,7 +153,13 @@ def get_engine(db_path: str):
     return engine
 
 
-def get_session_factory(db_path: str):
-    """Create a sessionmaker bound to the database at db_path."""
-    engine = get_engine(db_path)
+def get_session_factory(db_path: str, engine=None):
+    """Create a sessionmaker bound to the database at db_path.
+
+    If an existing engine is provided it will be reused, otherwise a new one
+    is created.  Passing the engine avoids creating a second connection pool
+    when the caller already has one (e.g., for schema migration in main.py).
+    """
+    if engine is None:
+        engine = get_engine(db_path)
     return sessionmaker(engine, expire_on_commit=False)
