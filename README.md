@@ -62,12 +62,13 @@ docker compose up --build
 
 ## Features
 
-- **Dashboard** — KPI cards, acceptance rate timeline, error distribution chart, scatter plot
+- **Dashboard** — KPI cards, acceptance rate timeline, error distribution chart, duration vs interactions scatter plot, code quality score timeline
 - **Session list** — Sortable table of all coding sessions with language, duration, acceptance rate
 - **Session detail** — Full interaction history with prompts, responses, and errors
 - **Filtering** — Filter by programming language, date range
 - **Insights** — Auto-generated recommendations from session metrics
 - **Code metrics** — Cyclomatic complexity, nesting depth, type hint detection, quality scores
+- **Error detection** — Automatic extraction of Python/JS/TS errors from conversation text; error distribution chart and per-session error counts
 
 ## API Endpoints
 
