@@ -14,7 +14,7 @@ function App() {
           <div className="container nav-container">
             <NavLink to="/" className="logo">
               <BarChart3 size={24} />
-              <span>Claude Code Analyzer</span>
+              <span>AgentPulse</span>
             </NavLink>
             <ul className="nav-links">
               <li>

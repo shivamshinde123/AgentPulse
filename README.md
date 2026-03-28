@@ -41,8 +41,21 @@ monitor/    →  SQLite DB  →  backend/  →  frontend/
 
 **Monitor** (data collection):
 ```bash
-cd monitor && uv sync && uv run python src/main.py
+cd monitor && uv sync && uv run python -m src.main
 ```
+
+> **Note:** When the monitor starts normally it automatically imports all existing Claude Code
+> JSONL history into the database before launching the live watcher, so the dashboard is
+> populated with past sessions immediately.  Pass `--no-import-history` to skip this step
+> (e.g. if you have already imported history or want a faster startup):
+> ```bash
+> uv run python -m src.main --no-import-history
+> ```
+>
+> You can also run a one-off import without starting the watcher:
+> ```bash
+> uv run python -m src.main --import-history
+> ```
 
 **Backend** (API server — http://localhost:8000):
 ```bash
