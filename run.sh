@@ -7,10 +7,15 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 cleanup() {
+    set +e
     echo ""
     echo "Shutting down services..."
-    kill $MONITOR_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
-    wait $MONITOR_PID $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    [ -n "$MONITOR_PID" ]  && kill "$MONITOR_PID"  2>/dev/null
+    [ -n "$BACKEND_PID" ]  && kill "$BACKEND_PID"  2>/dev/null
+    [ -n "$FRONTEND_PID" ] && kill "$FRONTEND_PID" 2>/dev/null
+    [ -n "$MONITOR_PID" ]  && wait "$MONITOR_PID"  2>/dev/null
+    [ -n "$BACKEND_PID" ]  && wait "$BACKEND_PID"  2>/dev/null
+    [ -n "$FRONTEND_PID" ] && wait "$FRONTEND_PID" 2>/dev/null
     echo "All services stopped."
 }
 trap cleanup EXIT INT TERM

@@ -73,8 +73,13 @@ class TestEndSession:
     def test_sets_duration(self, db, session_id):
         now = datetime.now(timezone.utc)
         db.end_session(session_id, end_time=now, acceptance_rate=0.5, status="completed")
-        # Duration should be approximately 3600 seconds (1 hour)
-        # Can't assert exact value due to timing, but should be > 0
+        # Session was created 1 hour ago, so duration should be ~3600s
+        from sqlalchemy.orm import Session as SASession
+        from src.db import SessionModel
+        with SASession(db.engine) as s:
+            row = s.get(SessionModel, session_id)
+            assert row.duration_seconds is not None
+            assert row.duration_seconds > 3500
 
     def test_nonexistent_session(self, db):
         # Should not raise
