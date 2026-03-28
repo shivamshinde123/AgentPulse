@@ -3,14 +3,13 @@
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
     Float,
-    Index,
     Integer,
     String,
     Text,
@@ -18,9 +17,11 @@ from sqlalchemy import (
     create_engine,
     event,
     func,
+    select,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
+    Session,
     relationship,
     sessionmaker,
 )
@@ -60,12 +61,6 @@ class SessionModel(Base):
     interactions = relationship("InteractionModel", back_populates="session")
     errors = relationship("ErrorModel", back_populates="session")
 
-    __table_args__ = (
-        Index("idx_sessions_start_time", "start_time"),
-        Index("idx_sessions_language", "language"),
-        Index("idx_sessions_status", "status"),
-    )
-
 
 class InteractionModel(Base):
     __tablename__ = "interactions"
@@ -88,12 +83,6 @@ class InteractionModel(Base):
     errors = relationship("ErrorModel", back_populates="interaction")
     metrics = relationship("CodeMetricsModel", back_populates="interaction")
 
-    __table_args__ = (
-        Index("idx_interactions_session_id", "session_id"),
-        Index("idx_interactions_timestamp", "timestamp"),
-        Index("idx_interactions_type", "interaction_type"),
-    )
-
 
 class ErrorModel(Base):
     __tablename__ = "errors"
@@ -113,12 +102,6 @@ class ErrorModel(Base):
     interaction = relationship("InteractionModel", back_populates="errors")
     session = relationship("SessionModel", back_populates="errors")
 
-    __table_args__ = (
-        Index("idx_errors_session_id", "session_id"),
-        Index("idx_errors_interaction_id", "interaction_id"),
-        Index("idx_errors_type", "error_type"),
-    )
-
 
 class CodeMetricsModel(Base):
     __tablename__ = "code_metrics"
@@ -136,10 +119,6 @@ class CodeMetricsModel(Base):
     created_at = Column(DateTime, default=_utcnow)
 
     interaction = relationship("InteractionModel", back_populates="metrics")
-
-    __table_args__ = (
-        Index("idx_code_metrics_interaction_id", "interaction_id"),
-    )
 
 
 # ── Database Manager ────────────────────────────────────────────────────────
@@ -160,7 +139,7 @@ class DatabaseManager:
             cursor.close()
 
         Base.metadata.create_all(self.engine)
-        self._session_factory = sessionmaker(self.engine, expire_on_commit=False)
+        self._session_factory = sessionmaker(bind=self.engine)
 
     # ── Session CRUD ────────────────────────────────────────────────────
 
