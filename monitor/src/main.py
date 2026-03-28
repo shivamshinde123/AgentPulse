@@ -77,11 +77,6 @@ def parse_args() -> argparse.Namespace:
         help="Language for --log-interaction (default: python)",
     )
     parser.add_argument(
-        "--test-session",
-        action="store_true",
-        help="Log a complete test session with sample data",
-    )
-    parser.add_argument(
         "--import-history",
         action="store_true",
         help=(
@@ -129,47 +124,6 @@ def log_single_interaction(db: DatabaseManager, prompt: str, response: str, lang
 
     print(f"Logged interaction: {prompt[:50]}...")
 
-
-def log_test_session(db: DatabaseManager) -> None:
-    """Log a complete test session with sample data."""
-    test_interactions = [
-        (
-            "Write a function that validates email addresses",
-            'def validate_email(email: str) -> bool:\n    """Validate an email address format."""\n    import re\n    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"\n    return bool(re.match(pattern, email))',
-        ),
-        (
-            "Add error handling to the email validator",
-            'def validate_email(email: str) -> bool:\n    """Validate an email address format."""\n    if not email or not isinstance(email, str):\n        return False\n    import re\n    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"\n    return bool(re.match(pattern, email))',
-        ),
-        (
-            "Write a test for the email validator",
-            'def test_validate_email():\n    assert validate_email("user@example.com") is True\n    assert validate_email("invalid") is False\n    assert validate_email("") is False\n    assert validate_email(None) is False\n    assert validate_email("a@b.c") is True',
-        ),
-    ]
-
-    session_logger = SessionLogger(db)
-    now = time.time()
-
-    session_logger.on_event("session_started", {
-        "timestamp": now,
-        "language": "python",
-        "file_path": "test_project/validators.py",
-        "project_name": "test-project",
-    })
-
-    for i, (prompt, response) in enumerate(test_interactions):
-        session_logger.on_event("interaction_detected", {
-            "timestamp": now + (i + 1) * 30,
-            "human_prompt": prompt,
-            "claude_response": response,
-        })
-
-    session_logger.on_event("session_ended", {
-        "timestamp": now + len(test_interactions) * 30 + 60,
-        "reason": "completed",
-    })
-
-    print(f"Test session logged with {len(test_interactions)} interactions.")
 
 
 def import_history(db: DatabaseManager) -> None:
@@ -305,8 +259,6 @@ def main() -> None:
     if args.log_interaction:
         prompt, response = args.log_interaction
         log_single_interaction(db, prompt, response, args.language)
-    elif args.test_session:
-        log_test_session(db)
     elif args.import_history:
         import_history(db)
     else:
