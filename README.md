@@ -37,12 +37,22 @@ monitor/    →  SQLite DB  →  backend/  →  frontend/
 .\run.ps1
 ```
 
+> **Windows note:** `run.ps1` calls `uv sync` first and then launches each service via
+> `.venv\Scripts\python` instead of `uv run`.  This avoids a `uv` issue on Windows where
+> project paths that contain spaces (e.g. `D:\WPI Things\AgentPulse`) cause a
+> *"Failed to canonicalize script path"* error that prevents the backend from starting.
+
 ### Option 2: Start services individually
 
 **Monitor** (data collection):
 ```bash
 cd monitor && uv sync && uv run python -m src.main
 ```
+
+> **Windows with spaces in path:** Use `.venv\Scripts\python` instead of `uv run python`:
+> ```powershell
+> cd monitor; uv sync; .venv\Scripts\python -m src.main
+> ```
 
 > **Note:** When the monitor starts normally it automatically imports all existing Claude Code
 > JSONL history into the database before launching the live watcher, so the dashboard is
@@ -73,6 +83,11 @@ cd monitor && uv sync && uv run python -m src.main
 ```bash
 cd backend && uv sync && uv run uvicorn src.main:app --host 127.0.0.1 --port 8000
 ```
+
+> **Windows with spaces in path:** Use `.venv\Scripts\python -m uvicorn` instead of `uv run uvicorn`:
+> ```powershell
+> cd backend; uv sync; .venv\Scripts\python -m uvicorn src.main:app --host 127.0.0.1 --port 8000
+> ```
 
 **Frontend** (dashboard — http://localhost:5173):
 ```bash
