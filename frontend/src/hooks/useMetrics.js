@@ -7,7 +7,8 @@ export function useMetrics(filters) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
+    const { signal } = controller
     setLoading(true)
     setError(null)
 
@@ -21,12 +22,11 @@ export function useMetrics(filters) {
     const qualityParams = {}
 
     Promise.all([
-      apiClient.get('/api/metrics/acceptance', { params: acceptanceParams }),
-      apiClient.get('/api/metrics/errors', { params: errorParams }),
-      apiClient.get('/api/metrics/quality', { params: qualityParams }),
+      apiClient.get('/api/metrics/acceptance', { params: acceptanceParams, signal }),
+      apiClient.get('/api/metrics/errors', { params: errorParams, signal }),
+      apiClient.get('/api/metrics/quality', { params: qualityParams, signal }),
     ])
       .then(([acceptanceRes, errorsRes, qualityRes]) => {
-        if (cancelled) return
         setMetrics({
           acceptanceRate: acceptanceRes.data.acceptance_rate ?? 0,
           acceptanceTrend: acceptanceRes.data.trend || [],
@@ -42,16 +42,16 @@ export function useMetrics(filters) {
         })
       })
       .catch((err) => {
-        if (cancelled) return
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
         console.error('Error fetching metrics:', err)
-        setError(err.message)
+        setError(err.response?.data?.message || err.message)
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!signal.aborted) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [filters.language, filters.timePeriod])
 

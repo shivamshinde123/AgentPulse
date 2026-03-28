@@ -8,7 +8,7 @@ export function useSessions(filters) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
 
@@ -21,24 +21,23 @@ export function useSessions(filters) {
     if (filters.offset) params.offset = filters.offset
 
     apiClient
-      .get('/api/sessions', { params })
+      .get('/api/sessions', { params, signal: controller.signal })
       .then((response) => {
-        if (cancelled) return
         setSessions(response.data.sessions || [])
         setTotalCount(response.data.total_count || 0)
       })
       .catch((err) => {
-        if (cancelled) return
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
         console.error('Error fetching sessions:', err)
-        setError(err.message)
+        setError(err.response?.data?.message || err.message)
         setSessions([])
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!controller.signal.aborted) setLoading(false)
       })
 
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [
     filters.language,

@@ -61,6 +61,17 @@ function SessionDetail() {
   const interactions = session?.interactions || []
   const errors = session?.errors || []
 
+  if (!session) {
+    return (
+      <div className="error-state">
+        <p>Session data could not be loaded.</p>
+        <Link to="/sessions" className="btn">
+          Back to Sessions
+        </Link>
+      </div>
+    )
+  }
+
   const qualityData = timeline.map((t) => ({
     timestamp: t.timestamp,
     value: t.quality_score ?? 0,

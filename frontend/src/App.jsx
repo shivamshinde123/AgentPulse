@@ -4,6 +4,7 @@ import { BarChart3 } from 'lucide-react'
 import Dashboard from './pages/Dashboard'
 import Sessions from './pages/Sessions'
 import SessionDetail from './pages/SessionDetail'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
   return (
@@ -29,11 +30,13 @@ function App() {
         </nav>
 
         <main className="main-content container">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/sessions" element={<Sessions />} />
-            <Route path="/sessions/:sessionId" element={<SessionDetail />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/sessions" element={<Sessions />} />
+              <Route path="/sessions/:sessionId" element={<SessionDetail />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
       </div>
     </Router>

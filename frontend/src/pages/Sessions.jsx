@@ -69,27 +69,63 @@ function Sessions() {
           <table className="sessions-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('start_time')}>
+                <th
+                  onClick={() => handleSort('start_time')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('start_time')}
+                  aria-sort={sortBy === 'start_time' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Start Time
                   <SortIcon column="start_time" />
                 </th>
-                <th onClick={() => handleSort('duration_seconds')}>
+                <th
+                  onClick={() => handleSort('duration_seconds')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('duration_seconds')}
+                  aria-sort={sortBy === 'duration_seconds' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Duration
                   <SortIcon column="duration_seconds" />
                 </th>
-                <th onClick={() => handleSort('language')}>
+                <th
+                  onClick={() => handleSort('language')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('language')}
+                  aria-sort={sortBy === 'language' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Language
                   <SortIcon column="language" />
                 </th>
-                <th onClick={() => handleSort('interaction_count')}>
+                <th
+                  onClick={() => handleSort('interaction_count')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('interaction_count')}
+                  aria-sort={sortBy === 'interaction_count' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Interactions
                   <SortIcon column="interaction_count" />
                 </th>
-                <th onClick={() => handleSort('acceptance_rate')}>
+                <th
+                  onClick={() => handleSort('acceptance_rate')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('acceptance_rate')}
+                  aria-sort={sortBy === 'acceptance_rate' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Acceptance
                   <SortIcon column="acceptance_rate" />
                 </th>
-                <th onClick={() => handleSort('status')}>
+                <th
+                  onClick={() => handleSort('status')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSort('status')}
+                  aria-sort={sortBy === 'status' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                >
                   Status
                   <SortIcon column="status" />
                 </th>

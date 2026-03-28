@@ -66,8 +66,8 @@ function InsightsPanel({ metrics, sessions }) {
       <h3>Key Insights</h3>
       {insights.length > 0 ? (
         <div className="insights-grid">
-          {insights.map((insight, index) => (
-            <div key={index} className={`insight-card insight-${insight.type}`}>
+          {insights.map((insight) => (
+            <div key={`${insight.type}-${insight.title}`} className={`insight-card insight-${insight.type}`}>
               <div className="insight-icon">{insight.icon}</div>
               <div className="insight-content">
                 <h4>{insight.title}</h4>

@@ -6,13 +6,22 @@ function LanguageFilter({ onLanguageChange }) {
   const [selected, setSelected] = useState('')
 
   useEffect(() => {
+    const controller = new AbortController()
+
     apiClient
-      .get('/api/sessions/stats/summary')
+      .get('/api/sessions/stats/summary', { signal: controller.signal })
       .then((response) => {
         const langs = Object.keys(response.data.languages || {})
         setLanguages(langs)
       })
-      .catch((err) => console.error('Error fetching languages:', err))
+      .catch((err) => {
+        if (err.name === 'CanceledError' || err.name === 'AbortError') return
+        console.error('Error fetching languages:', err)
+      })
+
+    return () => {
+      controller.abort()
+    }
   }, [])
 
   const handleChange = (e) => {
@@ -23,8 +32,8 @@ function LanguageFilter({ onLanguageChange }) {
 
   return (
     <div className="language-filter">
-      <label>Language</label>
-      <select value={selected} onChange={handleChange}>
+      <label htmlFor="language-select">Language</label>
+      <select id="language-select" value={selected} onChange={handleChange} aria-label="Filter by language">
         <option value="">All Languages</option>
         {languages.map((lang) => (
           <option key={lang} value={lang}>

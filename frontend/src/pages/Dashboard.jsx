@@ -17,8 +17,8 @@ function Dashboard() {
     endDate: null,
   })
 
-  const { sessions, loading: sessionsLoading } = useSessions(filters)
-  const { metrics, loading: metricsLoading } = useMetrics(filters)
+  const { sessions, loading: sessionsLoading, error: sessionsError } = useSessions(filters)
+  const { metrics, loading: metricsLoading, error: metricsError } = useMetrics(filters)
 
   const handleDateChange = (startDate, endDate) => {
     setFilters((prev) => ({ ...prev, startDate, endDate }))
@@ -63,6 +63,7 @@ function Dashboard() {
   }, [sessions])
 
   const loading = sessionsLoading || metricsLoading
+  const fetchError = sessionsError || metricsError
 
   return (
     <div className="dashboard">
@@ -123,6 +124,12 @@ function Dashboard() {
           </div>
         </div>
       </div>
+
+      {fetchError && (
+        <div className="error-state" role="alert">
+          Error loading data: {fetchError}
+        </div>
+      )}
 
       {loading ? (
         <div className="loading-state">Loading dashboard data...</div>
