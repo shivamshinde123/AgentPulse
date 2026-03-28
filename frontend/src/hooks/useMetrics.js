@@ -1,0 +1,59 @@
+import { useState, useEffect } from 'react'
+import { apiClient } from '../api/client'
+
+export function useMetrics(filters) {
+  const [metrics, setMetrics] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+
+    const acceptanceParams = {}
+    if (filters.language) acceptanceParams.language = filters.language
+    if (filters.timePeriod) acceptanceParams.time_period = filters.timePeriod
+
+    const errorParams = {}
+    if (filters.language) errorParams.language = filters.language
+
+    const qualityParams = {}
+
+    Promise.all([
+      apiClient.get('/api/metrics/acceptance', { params: acceptanceParams }),
+      apiClient.get('/api/metrics/errors', { params: errorParams }),
+      apiClient.get('/api/metrics/quality', { params: qualityParams }),
+    ])
+      .then(([acceptanceRes, errorsRes, qualityRes]) => {
+        if (cancelled) return
+        setMetrics({
+          acceptanceRate: acceptanceRes.data.acceptance_rate ?? 0,
+          acceptanceTrend: acceptanceRes.data.trend || [],
+          byLanguage: acceptanceRes.data.by_language || {},
+          byInteractionType: acceptanceRes.data.by_interaction_type || {},
+          errorDistribution: errorsRes.data.error_distribution || {},
+          mostCommonError: errorsRes.data.most_common_error,
+          avgRecoveryIterations: errorsRes.data.average_recovery_iterations ?? 0,
+          recoveryRate: errorsRes.data.recovery_rate ?? 0,
+          qualityMetrics: qualityRes.data.metrics || [],
+          avgQualityScore: qualityRes.data.average_quality_score ?? 0,
+          qualityTrend: qualityRes.data.trend || 'stable',
+        })
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('Error fetching metrics:', err)
+        setError(err.message)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [filters.language, filters.timePeriod])
+
+  return { metrics, loading, error }
+}
