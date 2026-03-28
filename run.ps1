@@ -1,5 +1,9 @@
 # Start all three Claude Code Analyzer services.
 # Usage: .\run.ps1
+#
+# Note: Services are started via .venv\Scripts\python instead of `uv run` to
+# avoid a uv issue on Windows where paths containing spaces cause
+# "Failed to canonicalize script path" errors.
 
 $ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -7,16 +11,25 @@ $RootDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Write-Host "=== Claude Code Analyzer ===" -ForegroundColor Cyan
 Write-Host ""
 
+# 0. Sync dependencies so .venv is present for both services
+Write-Host "[0/3] Syncing Python dependencies..." -ForegroundColor Gray
+Start-Process -NoNewWindow -Wait -FilePath "cmd.exe" `
+    -ArgumentList "/c uv sync" `
+    -WorkingDirectory "$RootDir\monitor"
+Start-Process -NoNewWindow -Wait -FilePath "cmd.exe" `
+    -ArgumentList "/c uv sync" `
+    -WorkingDirectory "$RootDir\backend"
+
 # 1. Monitor
 Write-Host "[1/3] Starting monitor service..." -ForegroundColor Green
 $monitor = Start-Process -NoNewWindow -PassThru -FilePath "cmd.exe" `
-    -ArgumentList "/c uv run python -m src.main" `
+    -ArgumentList "/c .venv\Scripts\python -m src.main" `
     -WorkingDirectory "$RootDir\monitor"
 
 # 2. Backend
 Write-Host "[2/3] Starting backend service (http://localhost:8000)..." -ForegroundColor Green
 $backend = Start-Process -NoNewWindow -PassThru -FilePath "cmd.exe" `
-    -ArgumentList "/c uv run uvicorn src.main:app --host 127.0.0.1 --port 8000" `
+    -ArgumentList "/c .venv\Scripts\python -m uvicorn src.main:app --host 127.0.0.1 --port 8000" `
     -WorkingDirectory "$RootDir\backend"
 
 # 3. Frontend
