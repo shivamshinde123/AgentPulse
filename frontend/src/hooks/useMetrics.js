@@ -45,6 +45,7 @@ export function useMetrics(filters) {
         if (err.name === 'CanceledError' || err.name === 'AbortError') return
         console.error('Error fetching metrics:', err)
         setError(err.response?.data?.message || err.message)
+        setMetrics(null)
       })
       .finally(() => {
         if (!signal.aborted) setLoading(false)

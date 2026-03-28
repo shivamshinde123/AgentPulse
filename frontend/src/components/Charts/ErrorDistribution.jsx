@@ -1,6 +1,6 @@
 import Plot from 'react-plotly.js'
 
-function Heatmap({ data, title }) {
+function ErrorDistribution({ data, title }) {
   if (!data || Object.keys(data).length === 0) {
     return <div className="chart-placeholder">No error data available</div>
   }
@@ -42,4 +42,4 @@ function Heatmap({ data, title }) {
   )
 }
 
-export default Heatmap
+export default ErrorDistribution

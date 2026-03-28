@@ -5,7 +5,12 @@ function ScatterPlot({ data, xKey, yKey, sizeKey, title }) {
     return <div className="chart-placeholder">No scatter data available</div>
   }
 
-  const xValues = data.map((d) => d[xKey] ?? 0)
+  // Convert duration to minutes for consistent display
+  const toMinutes = xKey === 'duration_seconds'
+  const xValues = data.map((d) => {
+    const raw = d[xKey] ?? 0
+    return toMinutes ? +(raw / 60).toFixed(1) : raw
+  })
   const yValues = data.map((d) => d[yKey] ?? 0)
   const sizeValues = sizeKey
     ? data.map((d) => Math.max((d[sizeKey] ?? 0) * 5 + 8, 8))
@@ -13,7 +18,7 @@ function ScatterPlot({ data, xKey, yKey, sizeKey, title }) {
   const hoverText = data.map(
     (d) =>
       `Language: ${d.language || 'N/A'}<br>` +
-      `Duration: ${Math.round((d.duration_seconds || 0) / 60)}min<br>` +
+      `Duration: ${((d.duration_seconds || 0) / 60).toFixed(1)} min<br>` +
       `Interactions: ${d.interaction_count || 0}<br>` +
       `Errors: ${d.error_count || 0}`
   )
@@ -27,7 +32,7 @@ function ScatterPlot({ data, xKey, yKey, sizeKey, title }) {
   })
   const colors = data.map((d) => colorMap[d.language] || '#6B7280')
 
-  const xLabel = xKey === 'duration_seconds' ? 'Duration (seconds)' : xKey
+  const xLabel = toMinutes ? 'Duration (minutes)' : xKey
   const yLabel = yKey === 'interaction_count' ? 'Interactions' : yKey
 
   return (

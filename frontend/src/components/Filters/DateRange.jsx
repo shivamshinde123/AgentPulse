@@ -33,11 +33,11 @@ function DateRange({ onDateChange }) {
         />
       </div>
       <div className="date-actions">
-        <button className="btn btn-sm" onClick={handleApply}>
+        <button type="button" className="btn btn-sm" onClick={handleApply}>
           Apply
         </button>
         {(startDate || endDate) && (
-          <button className="btn btn-sm btn-secondary" onClick={handleClear}>
+          <button type="button" className="btn btn-sm btn-secondary" onClick={handleClear}>
             Clear
           </button>
         )}

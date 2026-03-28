@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSessions } from '../hooks/useSessions'
+
+const EMPTY_FILTERS = {}
 
 function Sessions() {
   const [sortBy, setSortBy] = useState('start_time')
   const [sortOrder, setSortOrder] = useState('desc')
-  const [filters] = useState({})
 
-  const { sessions, loading, error } = useSessions(filters)
+  const { sessions, loading, error } = useSessions(EMPTY_FILTERS)
 
   const handleSort = (column) => {
     if (sortBy === column) {

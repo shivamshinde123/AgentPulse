@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { BarChart3, MessageSquare, ThumbsUp, Code } from 'lucide-react'
-import DateRange from '../components/Filters/DateRange'
 import LanguageFilter from '../components/Filters/LanguageFilter'
 import Timeline from '../components/Charts/Timeline'
-import Heatmap from '../components/Charts/Heatmap'
+import ErrorDistribution from '../components/Charts/ErrorDistribution'
 import ScatterPlot from '../components/Charts/ScatterPlot'
 import InsightsPanel from '../components/InsightsPanel'
 import { useSessions } from '../hooks/useSessions'
@@ -12,24 +11,12 @@ import { useMetrics } from '../hooks/useMetrics'
 function Dashboard() {
   const [filters, setFilters] = useState({
     language: null,
-    status: 'all',
-    startDate: null,
-    endDate: null,
   })
 
   const { sessions, loading: sessionsLoading, error: sessionsError } = useSessions(filters)
   const { metrics, loading: metricsLoading, error: metricsError } = useMetrics(filters)
-
-  const handleDateChange = (startDate, endDate) => {
-    setFilters((prev) => ({ ...prev, startDate, endDate }))
-  }
-
   const handleLanguageChange = (language) => {
     setFilters((prev) => ({ ...prev, language }))
-  }
-
-  const handleStatusChange = (e) => {
-    setFilters((prev) => ({ ...prev, status: e.target.value }))
   }
 
   const kpis = useMemo(() => {
@@ -111,17 +98,7 @@ function Dashboard() {
       <div className="filters-panel">
         <h3>Filters</h3>
         <div className="filters-row">
-          <DateRange onDateChange={handleDateChange} />
           <LanguageFilter onLanguageChange={handleLanguageChange} />
-          <div className="status-filter">
-            <label>Status</label>
-            <select value={filters.status} onChange={handleStatusChange}>
-              <option value="all">All</option>
-              <option value="completed">Completed</option>
-              <option value="abandoned">Abandoned</option>
-              <option value="in_progress">In Progress</option>
-            </select>
-          </div>
         </div>
       </div>
 
@@ -151,7 +128,7 @@ function Dashboard() {
             <div className="chart-card">
               <h3>Error Distribution</h3>
               <div className="chart-body">
-                <Heatmap data={metrics?.errorDistribution || {}} title="" />
+                <ErrorDistribution data={metrics?.errorDistribution || {}} title="" />
               </div>
             </div>
 
