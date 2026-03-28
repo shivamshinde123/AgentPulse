@@ -34,6 +34,8 @@ def extract_language(file_path: str) -> str:
 
 def estimate_tokens(text: str) -> int:
     """Rough token count estimate (~4 chars per token)."""
+    if not text:
+        return 0
     return max(1, len(text) // 4)
 
 
@@ -74,14 +76,21 @@ def _python_nesting_depth(code: str) -> int:
 
 def _indent_nesting_depth(code: str) -> int:
     """Estimate nesting depth from indentation levels."""
+    # Detect indent size from first indented line
+    indent_size = 4
+    for line in code.splitlines():
+        stripped = line.lstrip()
+        if stripped and line != stripped:
+            indent_size = len(line) - len(stripped)
+            break
+
     max_depth = 0
     for line in code.splitlines():
         stripped = line.lstrip()
         if not stripped:
             continue
         indent = len(line) - len(stripped)
-        # Assume 4-space or 2-space indent
-        depth = indent // 2
+        depth = indent // indent_size if indent_size > 0 else 0
         max_depth = max(max_depth, depth)
     return max_depth
 
@@ -103,7 +112,7 @@ def compute_code_metrics(code: str, language: str) -> Dict:
     }
 
     # Lines of code (non-blank, non-comment)
-    lines = [l for l in code.splitlines() if l.strip() and not l.strip().startswith("#")]
+    lines = [line for line in code.splitlines() if line.strip() and not line.strip().startswith("#")]
     metrics["lines_of_code"] = len(lines)
 
     if language == "python":
@@ -176,10 +185,11 @@ def _js_metrics(code: str) -> Dict:
     # Class count
     result["class_count"] = len(re.findall(r"\bclass\s+\w+", code))
 
-    # Cyclomatic complexity
-    decision_keywords = [r"\bif\b", r"\belse\s+if\b", r"\bfor\b", r"\bwhile\b",
-                         r"\bcatch\b", r"\bcase\b", r"\b\?\b"]
-    decisions = sum(len(re.findall(p, code)) for p in decision_keywords)
+    # Cyclomatic complexity (avoid double-counting else if)
+    else_if_count = len(re.findall(r"\belse\s+if\b", code))
+    if_count = len(re.findall(r"\bif\b", code)) - else_if_count
+    other_keywords = [r"\bfor\b", r"\bwhile\b", r"\bcatch\b", r"\bcase\b", r"\?\s*"]
+    decisions = if_count + else_if_count + sum(len(re.findall(p, code)) for p in other_keywords)
     result["cyclomatic_complexity"] = float(1 + decisions)
 
     # TypeScript type annotations

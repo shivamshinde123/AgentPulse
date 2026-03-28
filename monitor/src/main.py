@@ -13,6 +13,16 @@ from .logger import SessionLogger
 
 DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "sessions.db")
 
+LANGUAGE_TO_EXT = {
+    "python": "py", "javascript": "js", "typescript": "ts",
+    "java": "java", "go": "go", "rust": "rs", "csharp": "cs",
+    "cpp": "cpp", "ruby": "rb", "php": "php", "swift": "swift", "kotlin": "kt",
+}
+
+
+def _language_extension(language: str) -> str:
+    return LANGUAGE_TO_EXT.get(language, language[:2])
+
 
 def setup_logging(level: str = "INFO") -> None:
     logging.basicConfig(
@@ -75,7 +85,7 @@ def log_single_interaction(db: DatabaseManager, prompt: str, response: str, lang
     logger.on_event("session_started", {
         "timestamp": now,
         "language": language,
-        "file_path": f"cli_test.{language[:2]}",
+        "file_path": f"cli_test.{_language_extension(language)}",
         "project_name": "cli-test",
     })
 
@@ -137,12 +147,11 @@ def log_test_session(db: DatabaseManager) -> None:
 
 def run_watcher(db: DatabaseManager, args: argparse.Namespace) -> None:
     """Run the file system watcher continuously."""
-    watch_paths = None
-    if args.watch_dir:
-        watch_paths = [args.watch_dir]
+    # Append --watch-dir to defaults rather than replacing them
+    extra_paths = [args.watch_dir] if args.watch_dir else None
 
     detector = SessionDetector(
-        watch_paths=watch_paths,
+        watch_paths=extra_paths,
         timeout_seconds=args.timeout,
     )
     session_logger = SessionLogger(db)

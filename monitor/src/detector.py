@@ -63,7 +63,13 @@ class SessionDetector:
         watch_paths: Optional[List[str]] = None,
         timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     ):
-        self._watch_paths = watch_paths or _default_watch_paths()
+        defaults = _default_watch_paths()
+        if watch_paths:
+            # Append extra paths to defaults, dedup
+            all_paths = defaults + [p for p in watch_paths if p not in defaults]
+            self._watch_paths = [p for p in all_paths if os.path.isdir(p)]
+        else:
+            self._watch_paths = defaults
         self._timeout = timeout_seconds
         self._subscribers: List[Any] = []
         self._observer: Optional[Observer] = None
