@@ -1,8 +1,9 @@
 """Session logger: subscribes to detector events and persists to database."""
 
 import logging
+import re
 from datetime import datetime, timezone
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .db import DatabaseManager
 from .utils import (
@@ -13,6 +14,37 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+# ── Error detection patterns ─────────────────────────────────────────────────
+# Each entry: (regex_pattern, error_type, severity)
+_ERROR_PATTERNS: List[Tuple[str, str, str]] = [
+    # Python – syntax / import always "error"; runtime = "warning"
+    (r"Traceback \(most recent call last\)", "Traceback", "warning"),
+    (r"\bSyntaxError\b", "SyntaxError", "error"),
+    (r"\bIndentationError\b", "IndentationError", "error"),
+    (r"\bImportError\b", "ImportError", "error"),
+    (r"\bModuleNotFoundError\b", "ModuleNotFoundError", "error"),
+    (r"\bNameError\b", "NameError", "warning"),
+    (r"\bTypeError\b", "TypeError", "warning"),
+    (r"\bAttributeError\b", "AttributeError", "warning"),
+    (r"\bValueError\b", "ValueError", "warning"),
+    (r"\bKeyError\b", "KeyError", "warning"),
+    (r"\bIndexError\b", "IndexError", "warning"),
+    # JavaScript / TypeScript
+    (r"\bReferenceError\b", "ReferenceError", "warning"),
+    (r"Cannot read propert(?:y|ies) of", "TypeError", "warning"),
+    (r"is not a function", "TypeError", "warning"),
+    (r"is not defined", "ReferenceError", "warning"),
+    # General
+    (r"\bException\b", "Exception", "warning"),
+    (r"\bFAILED\b", "TestFailure", "error"),
+    (r"\bat <anonymous>", "StackFrame", "warning"),
+]
+
+_COMPILED_PATTERNS = [
+    (re.compile(pattern, re.IGNORECASE), error_type, severity)
+    for pattern, error_type, severity in _ERROR_PATTERNS
+]
 
 
 class SessionLogger:
@@ -100,6 +132,21 @@ class SessionLogger:
             "Interaction logged: seq=%d, type=%s", seq, interaction_type
         )
 
+        # Detect and persist errors found in the conversation text
+        errors = self._detect_errors(human_prompt, claude_response, interaction_language)
+        for error_type, error_message, severity in errors:
+            self._db.add_error(
+                interaction_id=interaction_id,
+                session_id=self._current_session_id,
+                error_type=error_type,
+                error_message=error_message,
+                language=interaction_language,
+                severity=severity,
+                timestamp=timestamp,
+            )
+        if errors:
+            logger.debug("Logged %d error(s) for interaction seq=%d", len(errors), seq)
+
     def _handle_session_ended(self, data: Dict) -> None:
         if self._current_session_id is None:
             return
@@ -140,6 +187,32 @@ class SessionLogger:
             return 0.0
         accepted = sum(1 for i in interactions if i.was_accepted)
         return accepted / len(interactions)
+
+    @staticmethod
+    def _detect_errors(
+        human_prompt: str, claude_response: str, language: str
+    ) -> List[Tuple[str, str, str]]:
+        """Scan conversation text for error patterns.
+
+        Returns a deduplicated list of (error_type, error_message, severity) tuples.
+        """
+        combined = f"{human_prompt}\n{claude_response}"
+        seen_types: set = set()
+        results: List[Tuple[str, str, str]] = []
+        for regex, error_type, severity in _COMPILED_PATTERNS:
+            if error_type in seen_types:
+                continue
+            match = regex.search(combined)
+            if match:
+                # Use the matched line as the error message (trim to 255 chars)
+                line_start = combined.rfind("\n", 0, match.start()) + 1
+                line_end = combined.find("\n", match.end())
+                if line_end == -1:
+                    line_end = len(combined)
+                error_message = combined[line_start:line_end].strip()[:255]
+                results.append((error_type, error_message, severity))
+                seen_types.add(error_type)
+        return results
 
     @staticmethod
     def _to_datetime(value) -> datetime:

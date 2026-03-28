@@ -144,6 +144,20 @@ function Dashboard() {
                 />
               </div>
             </div>
+
+            <div className="chart-card chart-card-wide">
+              <h3>Code Quality Over Time</h3>
+              <div className="chart-body">
+                <Timeline
+                  data={(metrics?.qualityMetrics || []).map((m) => ({
+                    timestamp: m.timestamp,
+                    value: m.code_quality_score,
+                  }))}
+                  title=""
+                  yLabel="Quality Score"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Insights */}
