@@ -2,6 +2,10 @@
 
 A full-stack analytics system that monitors Claude Code sessions locally, computes metrics, and displays interactive dashboards.
 
+## Detained Documentation
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/shivamshinde123/AgentPulse)
+
 ## Architecture
 
 Three independent services communicating through a shared SQLite database:
