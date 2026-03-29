@@ -9,7 +9,7 @@ const EMPTY_FILTERS = {}
  * Sessions list page.
  *
  * Fetches all sessions without filters, renders them in a sortable table,
- * and links each row to the :component:`SessionDetail` page.
+ * and links each row to the SessionDetail page.
  *
  * @returns {JSX.Element}
  */
